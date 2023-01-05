@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <script src="echarts.js"></script>
+    <title>滇东</title>
+    <style type="text/css">
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        .main{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+    </style>
+    
+</head>
+
+<body>
+    <div id="main" style="position:absolute;left:0;top:0;width:100%;height: 100%;"></div>
+
+    <div id="headline" style="position:absolute;width: 100%;height: 5%;left:0; top:0;">
+        <img src="img/main-title.png" style="width: 100%;">
+        <div id="weather" style="position: absolute;width: 20%; height: 100%;left:1%; top:20%;">
+            <img src="img/weather.png" style="width: 40%;">
+        </div>
+        <div id="time" style="position: absolute;width: 20%; height: 100%;right: 5%; top:25%;font-size: 24px;color: white;"></div>
+    </div>
+
+    <div id="background_left" style="position: absolute;width: 25%;height: 90%;left: 0;top: 8%;background-color: rgba(16,52,67,0.67);visibility: hidden;">
+
+        <div id="headline_1" style="position:relative;width:100%;height:4.5%;background: linear-gradient(to right,rgba(77,231,207,0.5),rgba(211,248,175,0.5));">
+            <p style="text-align: center;font-size: 2vh; color: white;line-height: 200%;">xxx运行情况</p>
+        </div>
+
+        <div id="chart1_1" style="position: absolute;width: 50%;height: 27%;left:0;top:5%;"></div>
+        <div id="chart1_2" style="position: absolute;width: 25%;height: 13%;left:50%;top:5%;"></div>
+        <div id="chart1_3" style="position: absolute;width: 25%;height: 13%;left:75%;top:5%;"></div>
+        <div id="chart1_4" style="position: absolute;width: 25%;height: 14%;left:50%;top:18%;"></div>
+        <div id="chart1_5" style="position: absolute;width: 25%;height: 14%;left:75%;top:18%;"></div>
+
+        <div id="headline_1" style="position:absolute;width:100%;height:4.5%;top:32%;background: linear-gradient(to right,rgba(77,231,207,0.5),rgba(211,248,175,0.5));">
+            <p style="text-align: center;font-size: 2vh;color: white;line-height: 200%;">压力变化图</p>
+        </div>
+
+        <div id="chart2" style="position: absolute;width: 100%;height: 29%;top:37%;"></div>
+
+        <div id="headline_1" style="position:absolute;width:100%;height:4.5%;top:66%;background: linear-gradient(to right,rgba(77,231,207,0.5),rgba(211,248,175,0.5));">
+            <p style="text-align: center;font-size: 2vh;color: white;line-height: 200%;">流量分析</p>
+        </div>
+
+        <div id="chart3" style="position: absolute;width: 100%;height: 29%;top: 71%;"></div>
+    </div>
+
+    <button id="buttonMachine" onclick="showMachine()" style="position: absolute;width:3.7%; height:7.5%; right:3%; bottom:16%;background: url(img/model.png) no-repeat;border-style: none;background-size: cover;">
+    </button>
+    <button id="buttonPanel" onclick="showPanel()" style="position: absolute;width:4%; height:8%; right:2.8%; bottom:5%;background: url(img/data.png) no-repeat;border-style: none;background-size: cover;">
+    </button>
+
+    <button id="testBtn0" style="height: 4%; width: 15%; position: absolute; right: 2%; top: 8%; visibility: hidden;border-style: none;color: white; background-color: rgba(238, 225, 105, 0.8); border-radius: 5px;" >错误信息</button>
+    <button id="testBtn" style="height: 4%; width: 15%; position: absolute; right: 2%; top: 12.5%; visibility: hidden;border-style: none;color: white; background-color: rgba(1, 97, 107, 0.8); border-radius: 5px;" onclick="changePos()">流量计X1.1出现故障，点击前往查看</button>
+    <button id="testBtn1" style="height: 4%; width: 15%; position: absolute; right: 2%; top: 17%; visibility: hidden;border-style: none;color: white; background-color: rgba(1, 97, 107, 0.8); border-radius: 5px;" onclick="changePos1()">节制闸1#出现故障，点击前往查看</button>
+    <button id="testBtn2" style="height: 4%; width: 15%; position: absolute; right: 2%; top: 21.5%; visibility: hidden;border-style: none;color: white; background-color: rgba(1, 97, 107, 0.8); border-radius: 5px;" >排涝液压泵1号出现故障，点击前往查看</button>
+    <button id="testBtn3" style="height: 4%; width: 15%; position: absolute; right: 2%; top: 26%; visibility: hidden;border-style: none;color: white; background-color: rgba(1, 97, 107, 0.8); border-radius: 5px;" >排涝液压泵4号出现故障，点击前往查看</button>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./three.js-dev/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script src="three.js-dev/examples/js/libs/stats.min.js"></script>
+    <script src="three.js-dev/build/three.js"></script>
+    <script src="three.js-dev/examples/js/controls/OrbitControls.js"></script>
+    <script src="three.js-dev/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="three.js-dev/examples/js/loaders/RGBELoader.js"></script>
+    <script src="three.js-dev/examples/js/loaders/FontLoader.js"></script>
+    <script src="three.js-dev/examples/js/geometries/TextGeometry.js"></script>
+
+    <script>
+
+        let camera, scene, renderer;
+        let raycaster;
+        let INTERSECTED;
+
+        var xmlHttp;
+        var url = "http://222.66.154.74:8024/xunxiang/info/station/list";
+        var database = {};
+        var container;
+
+        var sprite, spriteOrigin;
+        var spriteQiufa1, spriteQiufa1_detail;
+        var spriteYoubeng1, spriteYoubeng1_detail;
+        var spriteYoubeng4, spriteYoubeng4_detail;
+        var spriteLiuliangji, spriteLiuliangji_detail;
+
+        const pointer = new THREE.Vector2();
+
+        function changePos(){
+                // console.log(camera.position);
+                // let vec3 = new THREE.Vector3();
+                // camera.getWorldDirection(vec3);
+                // console.log(vec3);
+				camera.position.set(1.97,1.94,-2.50);
+				camera.lookAt(spriteLiuliangji.position);
+				render();
+			}
+        
+        function changePos1(){
+                // console.log(camera.position);
+                // let vec3 = new THREE.Vector3();
+                // camera.getWorldDirection(vec3);
+                // console.log(vec3);
+				camera.position.set(0.68,2.04,-0.58);
+				camera.lookAt(spriteQiufa1.position);
+				render();
+			}
+
+
+        init();
+        
+
+        // const axesHelper = new THREE.AxesHelper( 1 );
+        // scene.add( axesHelper ); 
+        
+
+        function makeTextSprite(message, parameters) {
+            if (parameters === undefined) parameters = {};
+            var fontface = parameters.hasOwnProperty("fontface") ?
+                parameters["fontface"] : "Arial";
+            /* 字体大小 */
+            var fontsize = parameters.hasOwnProperty("fontsize") ?
+                parameters["fontsize"] : 18;
+            /* 边框厚度 */
+            var borderThickness = parameters.hasOwnProperty("borderThickness") ?
+                parameters["borderThickness"] : 2;
+            /* 边框颜色 */
+            var borderColor = parameters.hasOwnProperty("borderColor") ?
+                parameters["borderColor"] : { r: 0, g: 0, b: 0, a: 1.0 };
+            /* 背景颜色 */
+            var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+                parameters["backgroundColor"] : { r: 255, g: 255, b: 255, a: 1.0 };
+            /* 创建画布 */
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            /* 字体加粗 */
+            // context.font = "Bold " + fontsize + "px " + fontface;
+            context.font = fontsize + "px " + fontface;
+            /* 获取文字的大小数据，高度取决于文字的大小 */
+            //var metrics = context.measureText(message);
+            var textWidth = 0;
+            message.forEach(function(mess){
+                if (context.measureText(mess).width>textWidth){
+                    textWidth = context.measureText(mess).width;
+                }
+            });
+            //console.log(metrics);
+            //var textWidth = metrics.width;
+            /* 背景颜色 */
+            context.fillStyle = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+                + backgroundColor.b + "," + backgroundColor.a + ")";
+            /* 边框的颜色 */
+            context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+                + borderColor.b + "," + borderColor.a + ")";
+            context.lineWidth = borderThickness;
+            /* 绘制圆角矩形 */
+            roundRect(context, borderThickness / 2, borderThickness / 2, textWidth + borderThickness, fontsize * 1.4 * 3 + borderThickness, 6);
+            // var image = new Image();
+            // image.src = "img/window_empty.png";
+            // image.onload=function(){
+            //     context.drawImage(image,0,0);
+            // }
+            
+            /* 字体颜色 */
+            context.fillStyle = "rgba(255, 255, 255, 1.0)";
+            context.fillText(message[0], borderThickness, fontsize + borderThickness);
+            context.fillText(message[1], borderThickness, fontsize + borderThickness + fontsize * 1.4);
+            context.fillText(message[2], borderThickness, fontsize + borderThickness + fontsize * 1.4 + fontsize * 1.4);
+            /* 画布内容用于纹理贴图 */
+            var texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            var spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            var sprite = new THREE.Sprite(spriteMaterial);
+            /* 缩放比例 */
+            sprite.scale.set(1, 1, 1);
+            return sprite;
+            }
+
+        function roundRect(ctx, x, y, w, h, r) {
+
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function init() {
+            container = document.getElementById("main");
+            camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 20 );
+            camera.position.set( - 1.8, 0.6, 2.7 );
+            scene = new THREE.Scene();
+
+            new THREE.RGBELoader()
+                .setPath( 'img/' )
+                .load( 'pano_2k.hdr', function ( texture ) {
+                    texture.mapping = THREE.EquirectangularReflectionMapping;
+                    scene.background = texture;
+                    scene.environment = texture;
+                    render();
+                } );
+
+            createXmlHttp();                                            //创建XMLHttpRequest对象
+            xmlHttp.onreadystatechange = storeData;                   //设置回调函数
+            xmlHttp.open("GET", url, true);
+            xmlHttp.send(null);
+
+
+            
+/////////////    
+        }
+
+        function dataReady(){
+            const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
+            const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+            const cube = new THREE.Mesh( geometry, material );
+            cube.name="cube1";
+            cube.position.set( 0.85, 0, -0.9 );
+            cube.visible=false;
+            scene.add( cube );
+            //"position":{"x":-0.8572993278503418,"y":0.05768477916717529,"z":-0.9196196794509888},"rotation":{"x":0.0,"y":-0.7071068286895752,"z":0.0,"w":0.7071068286895752},"scale":{"x":1.0,"y":1.0,"z":1.0}}
+            const cube_qiufa1 = new THREE.Mesh( geometry, material );
+            cube_qiufa1.name="cube_qiufa1";
+            cube_qiufa1.position.set( -2.44, 0.54, -0.7 );
+            cube_qiufa1.scale.set(3,3,1);
+            cube_qiufa1.visible=false;
+            scene.add( cube_qiufa1 );
+            //"position":{"x":2.444000005722046,"y":0.5379999876022339,"z":-0.6949999928474426},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.4794600009918213,"y":0.3496899902820587,"z":0.1970600038766861}}
+
+            const cube_youbeng1 = new THREE.Mesh( geometry, material );
+            cube_youbeng1.name="cube_youbeng1";
+            cube_youbeng1.position.set( 3.09, -0.62, 0.91 );
+            cube_youbeng1.scale.set(5,6,10);
+            cube_youbeng1.visible=false;
+            scene.add( cube_youbeng1 );
+            //"position":{"x":-3.0940001010894777,"y":-0.6230000257492065,"z":0.9129999876022339},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.4922783672809601,"y":0.5787634253501892,"z":0.9870912432670593}}
+            
+            const cube_youbeng4 = new THREE.Mesh( geometry, material );
+            cube_youbeng4.name="cube_youbeng4";
+            cube_youbeng4.position.set( 1.44, -0.69, 0.70 );
+            cube_youbeng4.scale.set(5,6,10);
+            cube_youbeng4.visible=false;
+            scene.add( cube_youbeng4 );
+            //"position":{"x":-1.4359999895095826,"y":-0.6899999976158142,"z":0.6990000009536743},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.36930805444717409,"y":0.3439413905143738,"z":0.9670301079750061}}
+
+            const cube_liuliangji = new THREE.Mesh( geometry, material );
+            cube_liuliangji.name="cube_liuliangji";
+            cube_liuliangji.position.set( 1.85, 1.15, -0.82 );
+            cube_liuliangji.scale.set(4,1.5,1.5);
+            cube_liuliangji.visible=false;
+            scene.add( cube_liuliangji );
+            //"position":{"x":-1.8509999513626099,"y":1.1460000276565552,"z":-0.8190000057220459},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.49564698338508608,"y":0.14000162482261659,"z":0.14342518150806428}}
+            
+            raycaster = new THREE.Raycaster();
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( window.innerWidth, window.innerHeight);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild( renderer.domElement );
+
+
+            const controls = new THREE.OrbitControls( camera, renderer.domElement );
+            controls.addEventListener( 'change', render ); 
+            // controls.minDistance = 2;
+            // controls.maxDistance = 10;
+            controls.target.set( 0, 0, - 0.2 );
+            controls.update();
+
+            document.addEventListener( 'click', onClick );
+            //document.addEventListener( 'mousemove', onPointerMove );
+
+            window.addEventListener( 'resize', onWindowResize );
+
+            // var spriteMap = new THREE.TextureLoader().load( "img/window.png" );
+            // var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap } );
+            // sprite = new THREE.Sprite( spriteMaterial );
+            // sprite.center.set(0,0);
+            // sprite.position.set( 0.85, 0, -0.9 );
+            // sprite.scale.set(1.3,1,1);
+            // sprite.visible=false;
+            // scene.add( sprite );
+
+            // spriteOrigin = makeTextSprite("2m/s,21℃",  
+            //     {
+            //         fontsize: 16,
+            //         borderColor: { r: 255, g: 255, b: 255, a: 0.6 },/* 边框黑色 */
+            //         backgroundColor: { r: 255, g: 255, b: 255, a: 0.6 }/* 背景颜色 */
+            //     });
+            // spriteOrigin.center = new THREE.Vector2(0, 1);
+            // spriteOrigin.scale.set(1,0.7,1);
+            // spriteOrigin.position.set(0.7, 0, -0.9);
+
+            //var state, color;
+            // if (database.data[197].cvalue == "0"){
+            //     state = "故障";
+            //     color = { r: 255, g: 0, b: 0, a: 0.6 }
+            //     console.log("设备名称： "+database.data[197].ctag);
+            //     console.log("设备状态编号为： "+ database.data[197].cvalue+",因此判定为故障");
+            // } 
+            // else {
+            //     state = "正常";
+            //     color = { r: 255, g: 255, b: 255, a: 0.6 }
+            // }
+            // spriteQiufa1 = makeTextSprite(state,
+            // {
+            //     fontsize: 16,
+            //     borderColor: color,
+            //     backgroundColor: color
+            // });
+
+            //排涝液压站节制闸1#
+            var spriteMap = new THREE.TextureLoader().load( "img/warning.png" );
+            var spriteMaterial = new THREE.SpriteMaterial( { map: spriteMap } );
+            spriteQiufa1 = new THREE.Sprite( spriteMaterial );
+            spriteQiufa1.center = new THREE.Vector2(0,1);
+            spriteQiufa1.scale.set(0.15,0.15,1);
+            spriteQiufa1.position.set(-2.17, 0.68, -0.7 );
+
+            var state, color;
+            //state = database.data[197].ctag + ": " + database.data[197].cvalue;
+            state = ["名称：排涝液压站节制闸1#", "状态：球阀开状态", "数值：1"];
+            color = { r: 1, g: 37, b: 47, a: 0.8 };
+            spriteQiufa1_detail = makeTextSprite(state,
+            {
+                fontsize: 14,
+                borderColor: color,
+                backgroundColor: color
+            });
+            spriteQiufa1_detail.center.set(0,1);
+            spriteQiufa1_detail.position.set( -2.17, 0.68, -0.7 );
+            spriteQiufa1_detail.scale.set(1.3,1,1);
+            spriteQiufa1_detail.visible=false;
+            scene.add( spriteQiufa1_detail );
+
+            //排涝液压油泵1号
+            spriteYoubeng1 = new THREE.Sprite( spriteMaterial );
+            spriteYoubeng1.center = new THREE.Vector2(0,1);
+            spriteYoubeng1.scale.set(0.15,0.15,1);
+            spriteYoubeng1.position.set(3.09, -0.62, 1.48 );
+            //"position":{"x":-3.0940001010894777,"y":-0.6230000257492065,"z":1.4769999980926514},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.009999999776482582,"y":0.009999999776482582,"z":0.009999999776482582}}
+
+            //state = database.data[5].ctag + ": " + database.data[5].cvalue;
+            state = ["名称：排涝液压油泵1号", "状态：A相电流高报警，故障", "数值：1，1"];
+            color = { r: 1, g: 37, b: 47, a: 0.8 };
+            spriteYoubeng1_detail = makeTextSprite(state,
+            {
+                fontsize: 14,
+                borderColor: color,
+                backgroundColor: color
+            });
+            spriteYoubeng1_detail.center.set(0,1);
+            spriteYoubeng1_detail.position.set( 3.09, -0.62, 1.48 );
+            spriteYoubeng1_detail.scale.set(1.3,1,1);
+            spriteYoubeng1_detail.visible=false;
+            scene.add( spriteYoubeng1_detail );
+
+            //排涝液压油泵4号
+            spriteYoubeng4 = new THREE.Sprite( spriteMaterial );
+            spriteYoubeng4.center = new THREE.Vector2(0,1);
+            spriteYoubeng4.scale.set(0.15,0.15,1);
+            spriteYoubeng4.position.set(1.44, -0.69, 1.22 );
+            state = ["名称：排涝液压油泵4号", "状态：运行", "数值：1"];
+            color = { r: 1, g: 37, b: 47, a: 0.8 };
+            spriteYoubeng4_detail = makeTextSprite(state,
+            {
+                fontsize: 14,
+                borderColor: color,
+                backgroundColor: color
+            });
+            spriteYoubeng4_detail.center.set(0,1);
+            spriteYoubeng4_detail.position.set( 1.44, -0.69, 1.22 );
+            spriteYoubeng4_detail.scale.set(1.3,1,1);
+            spriteYoubeng4_detail.visible=false;
+            scene.add( spriteYoubeng4_detail );
+            //"position":{"x":-1.4359999895095826,"y":-0.6899999976158142,"z":1.2223000526428223},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.009999999776482582,"y":0.009999999776482582,"z":0.009999999776482582}}
+
+            //排涝液压站流量计X1.1
+            spriteLiuliangji = new THREE.Sprite( spriteMaterial );
+            spriteLiuliangji.center = new THREE.Vector2(0,1);
+            spriteLiuliangji.scale.set(0.1,0.1,1);
+            spriteLiuliangji.position.set(1.89, 1.54, -0.82 );
+            state = ["名称：排涝液压站流量计X1.1", "状态：损坏", "数值：1"];
+            color = { r: 1, g: 37, b: 47, a: 0.8 };
+            spriteLiuliangji_detail = makeTextSprite(state,
+            {
+                fontsize: 14,
+                borderColor: color,
+                backgroundColor: color
+            });
+            spriteLiuliangji_detail.center.set(0,0.6);
+            spriteLiuliangji_detail.position.set( 1.89, 1.54, -0.82 );
+            spriteLiuliangji_detail.scale.set(0.8,0.6,1);
+            spriteLiuliangji_detail.visible=false;
+            scene.add( spriteLiuliangji_detail );
+            //"position":{"x":-1.8860000371932984,"y":1.5420000553131104,"z":-0.8190000057220459},"rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"scale":{"x":0.009999999776482582,"y":0.009999999776482582,"z":0.009999999776482582}}
+        }
+
+
+
+        function createXmlHttp() {
+            //根据window.XMLHttpRequest对象是否存在使用不同的创建方式
+            if (window.XMLHttpRequest) {
+                xmlHttp = new XMLHttpRequest();  //FireFox、Opera等浏览器支持的创建方式
+            } else {
+                xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");//IE浏览器支持的创建方式
+            }
+        }
+
+        function storeData() {
+            if (xmlHttp.readyState == 4) {
+                testdata = 1;
+                //console.log(xmlHttp.responseText);
+                database = JSON.parse(xmlHttp.responseText);
+                dataReady();
+            }
+        }
+
+        function showMachine(){
+            const loader = new THREE.GLTFLoader();
+                    loader.load( 'model/Model_glTF_simple_mat.gltf', function ( gltf ) {
+                    // loader.load( 'model/glTF/DamagedHelmet.gltf', function ( gltf ) {
+                        scene.add( gltf.scene );
+                        //scene.add(spriteOrigin);
+                        scene.add(spriteQiufa1);
+                        scene.add(spriteYoubeng1);
+                        scene.add(spriteYoubeng4);
+                        scene.add(spriteLiuliangji);
+                        render();
+                        var btn = document.getElementById("testBtn0");
+                        btn.style.visibility = "visible";
+                        var btn = document.getElementById("testBtn");
+                        btn.style.visibility = "visible";
+                        var btn = document.getElementById("testBtn1");
+                        btn.style.visibility = "visible";
+                        var btn = document.getElementById("testBtn2");
+                        btn.style.visibility = "visible";
+                        var btn = document.getElementById("testBtn3");
+                        btn.style.visibility = "visible";
+                    } );
+            // scene.add(spriteOrigin);
+            // scene.add(spriteQiufa1);
+
+            var btn=document.getElementById("buttonMachine");
+            btn.style.background = "url(img/model1.png) no-repeat";
+            btn.style.backgroundSize = "cover";
+        }
+
+        function showPanel(){
+            var panel = document.getElementById("background_left");
+            var btn=document.getElementById("buttonPanel");
+            if (panel.style.visibility == "hidden"){
+                panel.style.visibility = "visible";
+                btn.style.background = "url(img/data1.png) no-repeat";
+                btn.style.backgroundSize = "cover";
+            }
+            else{
+                panel.style.visibility = "hidden";
+                btn.style.background = "url(img/data.png) no-repeat";
+                btn.style.backgroundSize = "cover";
+            }
+        }
+
+        function onClick(){
+            pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+			pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+            raycaster.setFromCamera( pointer, camera );
+
+			const intersects = raycaster.intersectObjects( scene.children, false );
+
+			if ( intersects.length > 0 ) {
+                if (intersects[0].object==spriteOrigin){
+                    console.log("tttttt");
+                }else{
+                    console.log(intersects[0]);
+                }
+				if (intersects[0].object.name=="cube1"){
+                    if (sprite.visible==false){
+                        sprite.visible=true;
+                        spriteOrigin.visible=false;
+                        render();
+                    }
+                    else{
+                        sprite.visible=false;
+                        spriteOrigin.visible=true;
+                        render();
+                    }
+                }
+                else if (intersects[0].object.name=="cube_qiufa1"){
+                    if (spriteQiufa1_detail.visible==false){
+                        spriteQiufa1_detail.visible=true;
+                        spriteQiufa1.visible=false;
+                        render();
+                    }
+                    else{
+                        spriteQiufa1_detail.visible=false;
+                        spriteQiufa1.visible=true;
+                        render();
+                    }
+                }
+                else if (intersects[0].object.name=="cube_youbeng1"){
+                    if (spriteYoubeng1_detail.visible==false){
+                        spriteYoubeng1_detail.visible=true;
+                        spriteYoubeng1.visible=false;
+                        render();
+                    }
+                    else{
+                        spriteYoubeng1_detail.visible=false;
+                        spriteYoubeng1.visible=true;
+                        render();
+                    }
+                }
+                else if (intersects[0].object.name=="cube_youbeng4"){
+                    if (spriteYoubeng4_detail.visible==false){
+                        spriteYoubeng4_detail.visible=true;
+                        spriteYoubeng4.visible=false;
+                        render();
+                    }
+                    else{
+                        spriteYoubeng4_detail.visible=false;
+                        spriteYoubeng4.visible=true;
+                        render();
+                    }
+                }
+                else if (intersects[0].object.name=="cube_liuliangji"){
+                    if (spriteLiuliangji_detail.visible==false){
+                        spriteLiuliangji_detail.visible=true;
+                        spriteLiuliangji.visible=false;
+                        render();
+                    }
+                    else{
+                        spriteLiuliangji_detail.visible=false;
+                        spriteLiuliangji.visible=true;
+                        render();
+                    }
+                }
+			}
+        }
+
+        // function onPointerMove( event ) {
+        //     pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        //     pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        // }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            render();
+
+            myChart1_1.resize();
+            myChart1_2.resize();
+            myChart1_3.resize();
+            myChart1_4.resize();
+            myChart1_5.resize();
+            myChart2.resize();
+            myChart3.resize();
+        }
+
+        function render() {
+            // raycaster.setFromCamera( pointer, camera );
+
+			// const intersects = raycaster.intersectObjects( scene.children, false );
+
+			// if ( intersects.length > 0 ) {
+
+			// 	if ( INTERSECTED != intersects[ 0 ].object ) {
+
+			// 		if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+			// 		INTERSECTED = intersects[ 0 ].object;
+			// 		INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+			// 		INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+			// 	}
+
+			// } else {
+
+			// 	if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+			// 	INTERSECTED = null;
+
+			// }
+            renderer.render( scene, camera );
+        }
+    </script>
+
+    
+
+    <script type="text/javascript">
+        window.onload=function(){
+            window.requestAnimationFrame(getDate)  
+        }
+        function getDate(){
+            window.setTimeout(function(){
+                window.requestAnimationFrame(getDate)
+            },1000/2)
+            var d=new Date();   
+            var year=d.getFullYear();  //获取年
+            var month=d.getMonth()+1;  //获取月，从 Date 对象返回月份 (0 ~ 11)，故在此处+1
+            var day=d.getDay();    //获取日  
+            var days=d.getDate(); //获取日期    
+            var hour=d.getHours();   //获取小时     
+            var minute=d.getMinutes();  //获取分钟        
+            var second=d.getSeconds();   //获取秒
+            if(month<10) month="0"+month;
+            if(days<10) days="0"+days;
+            if(hour<10) hour="0"+hour;
+            if(minute<10) minute="0"+minute;
+            if(second<10) second="0"+second;
+            var week=new Array("星期日","星期一","星期二","星期三","星期四","星期五","星期六");
+            var Tools=document.getElementById("time");
+            var da=year+" 年 "+month+" 月 "+days+" 日 "+week[day]+" "+hour+" : "+minute+" :"+second;
+            Tools.innerHTML=da;
+        } 
+    </script>
+
+    <script>
+        var myChart1_1 = echarts.init(document.getElementById('chart1_1'));
+        option1_1 = {
+                title: {
+                    text: '在网分布系统现状',top:'10%',left:'center',
+                    textStyle:{
+                    color:'#fff',        //颜色
+                    fontStyle:'normal',     //风格
+                    fontWeight:'normal',    //粗细
+                    // fontFamily:'Microsoft yahei',   //字体
+                    fontSize:14,     //大小
+
+                    textAlign:'center'   //水平对齐
+                    },                      
+                },
+            color:['#E2A83F','#5AA949','#7121B4','#C23531'],
+            tooltip: {
+                trigger: 'item',
+                formatter: "{a} <br/>{b}: {c} ({d}%)"
+            },
+            legend: {
+                orient: 'vertical',
+                x: 'left',
+                itemWidth: 8,  // 设置宽度
+                itemHeight: 8, // 设置高度
+                textStyle:{
+                            color:"#fff",
+                            fontSize: 10
+                        },
+                  orient: 'vertical',
+                  left: 'center',  //图例距离左的距离
+                  top:'24%',
+                data:['已归档站点','已拆除站点','','在建站点','改造站点'],//图例换行
+
+            },
+
+
+            grid: {
+                left: '-20%',//生成的图片和左边的间距
+                // right: '2%',//生成的图片和右边的间距’,
+                // bottom: '10%',//生成的图片和底部的间距
+                top: '25%',//生成的图片和顶部的间距
+                containLabel: true//为ture才会生效以上的设置
+            },
+
+            series: [
+                {
+                    name:'count',
+                    type:'pie',
+                    radius: ['30%', '55%'],
+                    center: ['50%', '70%'],   //在div中位置
+                    avoidLabelOverlap: false,
+                    label:{
+
+                        normal: {
+                            show: true,
+                            position: 'inner',
+                            formatter: '{d}%',       //显示的内容
+                            textStyle: {
+                                fontSize: '10',
+                                color:'#fff'
+                            }
+                        },
+                        emphasis: {
+                            show: true,
+                            textStyle: {
+                                fontSize: '12',
+                                fontWeight: 'bold'
+                            }
+                        }
+                    },
+                    labelLine: {
+                        normal: {
+                            show: false
+                        }
+                    },
+                    data:[
+                        {value:70, name:'已归档站点'},
+                        {value:5, name:'已拆除站点'},
+                        {value:10, name:'在建站点'},
+                        {value:15, name:'改造站点'}
+                    ]
+                }
+            ]
+        };
+        myChart1_1.setOption(option1_1);
+
+
+        var myChart1_2 = echarts.init(document.getElementById('chart1_2'));
+        var option1_2 = {
+            tooltip : {
+                formatter: "{a} <br/>{b} : {c}"
+            },
+            // toolbox: {
+            //     show : true,
+            //     feature : {
+            //         mark : {show: true},
+            //         restore : {show: true},
+            //         saveAsImage : {show: true}
+            //     }
+            // },
+            series : [
+                {
+                    name:'指标',
+                    type:'gauge',                
+                    min:0,
+                    max:1000,            
+                    splitNumber: 10,       // 分割段数，默认为5
+                    radius: '68%',
+                    center: ["50%", "60%"], // 仪表位置
+                    axisLine: {            // 坐标轴线
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: [[0.2, '#228b22'],[0.8, '#48b'],[1, '#ff4500']], 
+                            width: 2, //仪表盘外围圆宽度
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    axisTick: {            // 坐标轴小标记
+                        splitNumber: 5,   // 每份split细分多少段
+                        length :6,        // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    axisLabel: {
+                        show:false
+                    },
+                    splitLine: {           // 分隔线
+                        show: true,        // 默认显示，属性show控制显示与否
+                        length :2,         // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                            width:2,
+                            color: '#fff',
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    pointer : {
+                        width : 2
+                    },
+                    title : {
+                        show : true,
+                        offsetCenter: [0, '100%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 10,
+                            color: '#fff',
+                        }
+                    },
+                    detail : {
+                        formatter:'{value}',
+                        offsetCenter: [0, '30%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 14,
+                            color: '#fff'
+                        }
+                    },
+                    data:[{value: 554, name: '位置告警'}]
+                }
+            ]
+        };
+        myChart1_2.setOption(option1_2);
+
+
+        var myChart1_3 = echarts.init(document.getElementById('chart1_3'));
+        var option1_3 = {
+            tooltip : {
+                formatter: "{a} <br/>{b} : {c}"
+            },
+            // toolbox: {
+            //     show : true,
+            //     feature : {
+            //         mark : {show: true},
+            //         restore : {show: true},
+            //         saveAsImage : {show: true}
+            //     }
+            // },
+            series : [
+                {
+                    name:'指标',
+                    type:'gauge',                
+                    min:0,
+                    max:1000,            
+                    splitNumber: 10,       // 分割段数，默认为5
+                    radius: '68%',
+                    center: ["50%", "60%"], // 仪表位置
+                    axisLine: {            // 坐标轴线
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: [[0.2, '#228b22'],[0.8, '#48b'],[1, '#ff4500']], 
+                            width: 2, //仪表盘外围圆宽度
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    axisTick: {            // 坐标轴小标记
+                        splitNumber: 5,   // 每份split细分多少段
+                        length :6,        // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    axisLabel: {           // 坐标轴文本标签，详见axis.axisLabel
+                        show: false,
+                    },
+                    splitLine: {           // 分隔线
+                        show: true,        // 默认显示，属性show控制显示与否
+                        length :2,         // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                            width:2,
+                            color: '#fff',
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    pointer : {
+                        width : 2
+                    },
+                    title : {
+                        show : true,
+                        offsetCenter: [0, '100%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 10,
+                            color: '#fff',
+                        }
+                    },
+                    detail : {
+                        formatter:'{value}',
+                        offsetCenter: [0, '30%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 14,
+                            color: '#fff'
+                        }
+                    },
+                    data:[{value: 242, name: '数字型号异常告警'}]
+                }
+            ]
+        };
+        myChart1_3.setOption(option1_3);
+
+
+        var myChart1_4 = echarts.init(document.getElementById('chart1_4'));
+        var option1_4 = {
+            tooltip : {
+                formatter: "{a} <br/>{b} : {c}"
+            },
+            // toolbox: {
+            //     show : true,
+            //     feature : {
+            //         mark : {show: true},
+            //         restore : {show: true},
+            //         saveAsImage : {show: true}
+            //     }
+            // },
+            series : [
+                {
+                    name:'指标',
+                    type:'gauge',                
+                    min:0,
+                    max:1000,      //表盘最大值      
+                    splitNumber: 10,       // 分割段数，默认为5
+                    radius: '68%',
+                    center: ["50%", "60%"], // 仪表位置
+                    axisLine: {            // 坐标轴线
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: [[0.2, '#228b22'],[0.8, '#48b'],[1, '#ff4500']], 
+                            width: 2, //仪表盘外围圆宽度
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    axisTick: {            // 坐标轴小标记
+                        splitNumber: 5,   // 每份split细分多少段
+                        length :6,        // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    axisLabel: {           // 坐标轴文本标签，详见axis.axisLabel
+                        show:false,
+                    },
+                    splitLine: {           // 分隔线
+                        show: true,        // 默认显示，属性show控制显示与否
+                        length :2,         // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                            width:2,
+                            color: '#fff',
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    pointer : {
+                        width : 2
+                    },
+                    title : {
+                        show : true,
+                        offsetCenter: [0, '100%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 10,
+                            color: '#fff',
+                        }
+                    },
+                    detail : {
+                        formatter:'{value}',
+                        offsetCenter: [0, '30%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 14,
+                            color: '#fff'
+                        }
+                    },
+                    data:[{value: 62, name: '监控无响应告警'}]
+                }
+            ]
+        };
+        myChart1_4.setOption(option1_4);
+
+
+        var myChart1_5 = echarts.init(document.getElementById('chart1_5'));
+        var option1_5 = {
+            tooltip : {
+                formatter: "{a} <br/>{b} : {c}"
+            },
+            // toolbox: {
+            //     show : true,
+            //     feature : {
+            //         mark : {show: true},
+            //         restore : {show: true},
+            //         saveAsImage : {show: true}
+            //     }
+            // },
+            series : [
+                {
+                    name:'指标',
+                    type:'gauge',                
+                    min:0,
+                    max:1000,            
+                    splitNumber: 10,       // 分割段数，默认为5
+                    radius: '68%',
+                    center: ["50%", "60%"], // 仪表位置
+                    axisLine: {            // 坐标轴线
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: [[0.2, '#228b22'],[0.8, '#48b'],[1, '#ff4500']], 
+                            width: 2, //仪表盘外围圆宽度
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    axisTick: {            // 坐标轴小标记
+                        splitNumber: 5,   // 每份split细分多少段
+                        length :6,        // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle控制线条样式
+                            color: 'auto'
+                        }
+                    },
+                    axisLabel: {           // 坐标轴文本标签，详见axis.axisLabel
+                        show:false,
+                    },
+                    splitLine: {           // 分隔线
+                        show: true,        // 默认显示，属性show控制显示与否
+                        length :2,         // 属性length控制线长
+                        lineStyle: {       // 属性lineStyle（详见lineStyle）控制线条样式
+                            width:2,
+                            color: '#fff',
+                            shadowColor : '#fff', //默认透明
+                            shadowBlur: 10
+                        }
+                    },
+                    pointer : {
+                        width : 2
+                    },
+                    title : {
+                        show : true,
+                        offsetCenter: [0, '100%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 10,
+                            color: '#fff',
+                        }
+                    },
+                    detail : {
+                        formatter:'{value}',
+                        offsetCenter: [0, '30%'],       // x, y，单位px
+                        textStyle: {       // 其余属性默认使用全局文本样式，详见TEXTSTYLE
+                            fontWeight: 'bolder',
+                            fontSize: 14,
+                            color: '#fff'
+                        }
+                    },
+                    data:[{value: 256, name: '接收电平强度告警'}]
+                }
+            ]
+        };
+        myChart1_5.setOption(option1_5);
+
+
+        var myChart2 = echarts.init(document.getElementById('chart2'));
+        option2 = {
+            // title: {
+            //     text: '在网分布系统现状
+            //     在网直放站现状
+            //     分地市分布系统现状'
+            // },
+            title: {
+                    text: '分地市分布系统现状',top:'0%',left:'center',
+                    textStyle:{
+                    color:'#fff',        //颜色
+                    fontStyle:'normal',     //风格
+                    fontWeight:'normal',    //粗细
+                    // fontFamily:'Microsoft yahei',   //字体
+                    fontSize:14,     //大小
+
+                    textAlign:'center'   //水平对齐
+                },
+
+                      
+                },
+            tooltip: {
+                trigger: 'axis'
+            },
+            textStyle : {
+                fontWeight : 'normal',     //显示字体粗细等
+                fontSize : 10
+            },
+            legend: {
+                data:['已归档站点数','已拆除站点数','在建站点','改造站点'],
+                textStyle:{
+                    fontSize: 10,
+                    color: '#fff'
+                },
+                top: '10%'
+            },
+            grid: {
+                top: '20%',
+                left: '3%',
+                right: '4%',
+                bottom: '5%',
+                containLabel: true
+            },
+            color: ['#FF4949','#FFA74D','#77cd63','#44AFF0',],
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: ['杭州','衢州','舟山','宁波','温州','嘉兴','金华','绍兴','丽水','台州','湖州'],
+                splitLine: {
+                    show: false
+                },
+                axisLabel: {   //x轴文字样式
+                            textStyle: {
+                                fontSize: 10
+                            }
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                }
+            },
+            yAxis: {
+                // name: '数量',
+                type: 'value',
+                splitLine: {
+                    show: false
+                },
+                axisLabel: {   //y轴文字样式
+                            textStyle: {
+                                fontSize: 10
+                            }
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                }
+            },
+            series: [
+                {
+                    name:'已归档站点数',
+                    type:'line',
+                    data:[4550, 1260, 710, 3970, 3467, 3400, 2989, 2019, 1800, 1802, 1780]
+                },
+                {
+                    name:'已拆除站点数',
+                    type:'line',
+                    data:[905, 1, 1, 230, 480, 400, 20, 0, 0, 0, 0]
+                },
+                {
+                    name:'在建站点',
+                    type:'line',
+                    data:[600, 450, 140, 600, 520, 450, 490, 300, 0, 500, 0]
+                },
+                {
+                    name:'改造站点',
+                    type:'line',
+                    data:[700, 490, 150, 660, 520, 450, 490, 300, 0, 500, 0]
+                }
+                
+            ]
+        };
+        myChart2.setOption(option2);
+
+
+        var myChart3 = echarts.init(document.getElementById('chart3'));
+        
+         var option3 = {
+            // title: {
+            //     text: 'ECharts 入门示例'
+            // },
+            color:['#ef5f2b','#4a6ac4','#e2a83f','#a325c0','#369ebc','#77CD63'],
+            tooltip: {},
+            legend: {
+                data:['GSM','WCDMA','LTE','WLAN','NB-LOT','LORA'],
+                textStyle:{
+                    color:"#fff",
+                    fontSize: 10
+                },
+                icon: "circle",   //  这个字段控制形状  类型包括 circle，rect ，roundRect，triangle，diamond，pin，arrow，none
+                itemWidth: 8,  // 设置宽度
+                itemHeight: 8, // 设置高度
+                itemGap: 10,// 设置间距
+                padding: [40, 10, 15, 20]    // [5, 10, 15, 20]
+
+            },
+            dataset: {
+                source: [
+                    ['x','需整改','需增补','需新建','需扩容'],
+                    ['GSM', 10, 0, 0, 0, 0, 0],
+                    ['WCDMA', 20, 0, 0, 0, 0, 0],
+                    ['LTE', 125, 124, 226, 38, 45, 29],
+                    ['WLAN', 38, 36, 148, 13, 25, 10],
+                    ['NB-LOT', 25, 43, 38, 30],
+                    ['LORA', 28, 31, 26, 12]
+                ]
+            },
+            xAxis: [
+                {
+                    // data: ['需整改','需增补','需新建','需扩容'],
+                    type: 'category', gridIndex: 0,
+                    //设置坐标轴字体颜色和宽度
+                    axisLine: {
+                        lineStyle: {
+                            color: "#fff",
+                        }
+                    },
+                    axisLabel: {   //x轴文字样式
+                            textStyle: {
+                                fontSize: 13
+                            }
+                    },
+                }
+
+            ],
+            yAxis: [
+                {
+                    gridIndex: 0,
+                 //设置坐标轴字体颜色和宽度
+                    axisLine: {
+                        lineStyle: {
+                            color: "#fff",
+                        }
+                    },
+                    axisLabel: {   //x轴文字样式
+                            textStyle: {
+                                fontSize: 10
+                            }
+                    },
+                }
+            ],
+            grid: [
+                {top: '22%',
+                bottom: '20%',
+                // left: '10%',
+                // right:'5%'
+            },
+            ],
+            series: [
+                // These series are in the first grid.
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                {type: 'bar', seriesLayoutBy: 'row', barWidth:14, barGap:'10%',},
+                // These series are in the second grid.
+            ]
+               
+        };
+        // 使用刚指定的配置项和数据显示图表。
+        myChart3.setOption(option3);
+
+
+
+        // var myChart3 = echarts.init(document.getElementById('chart3'), 'dark');
+        // var option3 = {
+        //     tooltip: {},
+        //     legend: {
+        //         data: ['电压']
+        //     },
+        //     xAxis: {
+        //         data: ['1号A相电压', '1号B相电压', '1号C相电压', '1号D相电压']
+        //     },
+        //     yAxis: {},
+        //     series: [
+        //     {
+        //         name: '电压',
+        //         type: 'bar',
+        //         data: []
+        //     }
+        //    ]
+        // };
+        // myChart3.setOption(option3);
+
+        // var nums = new Array(4);
+        // for (i = 0; i < nums.length; i++) {
+        //     nums[i]=Math.floor(100+Math.random()*100);
+        //     console.log(nums[i]);
+        // } 
+
+        // myChart3.setOption({
+        //     series: [
+        //     {
+        //         name: '电压',
+        //         data: nums
+        //     }
+        //     ]
+        // });
+    </script>
+
+</body>
+</html>
+

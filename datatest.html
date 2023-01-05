@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <textarea rows="30" cols="100" id="source"></textarea>
+
+    <script>
+        var xmlHttp;
+        var database = {};
+        //console.log(xmlHttp);
+        
+
+        url = "http://222.66.154.74:8024/xunxiang/info/station/list";
+        createXmlHttp();                                            //创建XMLHttpRequest对象
+        xmlHttp.onreadystatechange = writeSource;                   //设置回调函数
+        xmlHttp.open("GET", url, true);
+        xmlHttp.send(null);
+
+
+        function createXmlHttp() {
+            //根据window.XMLHttpRequest对象是否存在使用不同的创建方式
+            if (window.XMLHttpRequest) {
+                xmlHttp = new XMLHttpRequest();  //FireFox、Opera等浏览器支持的创建方式
+            } else {
+                xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");//IE浏览器支持的创建方式
+            }
+        }
+
+        function writeSource() {
+            //console.log(testdata);
+            if (xmlHttp.readyState == 4) {
+                document.getElementById("source").value = xmlHttp.responseText;
+                database = JSON.parse(xmlHttp.responseText);
+            }
+        }
+    </script>
+</body>
+</html>
